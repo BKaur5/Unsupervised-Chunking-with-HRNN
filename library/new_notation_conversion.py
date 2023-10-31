@@ -21,6 +21,22 @@ def convert_to_new_notation(words, labels):
 
     return new_notation
 
+def string_convert_to_new_notation(words, labels):
+    new_notation = ""
+    current_chunk = ""
+
+    for word, label in zip(words, labels):
+        if label == '2':  # Word boundary
+            if current_chunk:
+                new_notation += f"[{current_chunk}] "  # Wrap current chunk in square brackets
+            current_chunk = word
+        else:
+            current_chunk += " " + word
+
+    if current_chunk:
+        new_notation += f"[{current_chunk}]"
+
+    return new_notation
 
 
 def convert_save_to_new_file(data, new_file_path):
@@ -29,6 +45,17 @@ def convert_save_to_new_file(data, new_file_path):
 
     for words, labels in data:
         new_notation = convert_to_new_notation(words, labels)
+        new_data.append(new_notation)
+
+    with open(new_file_path, 'wb') as new_file:
+        pickle.dump(new_data, new_file)
+
+def string_convert_save_to_new_file(data, new_file_path):
+    # Convert each row in the loaded data to the new notation
+    new_data = []
+
+    for words, labels in data:
+        new_notation = string_convert_to_new_notation(words, labels)
         new_data.append(new_notation)
 
     with open(new_file_path, 'wb') as new_file:
@@ -50,6 +77,10 @@ def main():
     convert_save_to_new_file(train_data, new_train_path)
     convert_save_to_new_file(val_data, new_val_path)
     convert_save_to_new_file(test_data, new_test_path)
+
+    string_convert_save_to_new_file(train_data, "../data/new_notation_separated_data_en/train_string.pkl")
+    string_convert_save_to_new_file(val_data, "../data/new_notation_separated_data_en/val_string.pkl")
+    string_convert_save_to_new_file(test_data, "../data/new_notation_separated_data_en/test_string.pkl")
 
 if __name__ == "__main__":
     main()

@@ -13,18 +13,29 @@ class LabelledEntry:
             if tag=='B':
                 bracketed_sent += '] ['
             bracketed_sent += word+' '
-        bracketed_sent = bracketed_sent[2:-1]
+        bracketed_sent = bracketed_sent[2:]
         return LabelledEntry.load_from_bracket_format(bracketed_sent)
     
     def load_from_12_format(words, tags):
         # test.pkl
         bracketed_sent = '['
         tags[-1] = '-1'
+        
         for word, tag in zip(words, tags):
             bracketed_sent += word
             if tag=='2':
                 bracketed_sent += '] ['
+            elif tag == '1':
+                bracketed_sent += ' '
+
+        bracketed_sent += ']'
+            
+            # bracketed_sent += ' '
         return LabelledEntry.load_from_bracket_format(bracketed_sent)
+    
+    def get_sentence_no_notation(bracketed_sent):
+        # Take the bracketed sent and convert to a string of only words as a sentence without any notations.
+        pass
 
     def __str__(self):
         return '['+'] ['.join(list(map(' '.join, self.chunks)))+']'

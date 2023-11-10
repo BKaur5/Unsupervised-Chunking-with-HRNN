@@ -18,7 +18,7 @@ def eval_hu(test_data, test_tags_gt, single_words=False, **args):
 
 if __name__ == "__main__":
     # TEST_PATH = "experiments/second_order_hiddendim_anal_FA/test_predicted_0.pkl"
-    TEST_PATH = "data/en_sentences/test.pkl"
+    TEST_PATH = "HRNNdata_en/test.pkl"
     TEST_TRUE_TAGS_PATH = "data/en_BI_tags/test.pkl"
 
     test_data = pickle.load(open(TEST_PATH, 'rb'))

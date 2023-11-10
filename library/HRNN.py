@@ -182,6 +182,8 @@ def validation_output(
 ) -> str:
     output = "x y B B\n"
     for i, pred in enumerate(ind[:-1]):
+        if i + 1 >= len(true_tag):
+            break  # Exit the loop if accessing true_tag[i+1] is out of bounds
         true_label = true_tag[i+1]
         if true_label not in ["B", "I"]:
             continue

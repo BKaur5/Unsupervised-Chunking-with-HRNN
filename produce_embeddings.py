@@ -5,6 +5,7 @@ import os
 import yaml
 from datetime import datetime
 import shutil
+from library.labelled_entry import LabelledEntry
 
 EXPERIMENT_PATH = "experiments"
 # function that receives a list of sentences in string format, return a list of tensors with added padding
@@ -21,6 +22,7 @@ def main():
     with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     # second argument is path to folder containing input files
+    # read this from config, it is a list of files and not a folder
     input_folder_path = sys.argv[2]
     # third argument is path to output file 
     output_folder_path = sys.argv[3]
@@ -37,7 +39,12 @@ def main():
         files = os.listdir(input_folder_path)
         for file in files:
             file_path = os.path.join(input_folder_path, file)
-            data = pickle.load(open(file_path, 'rb'))
+            # data will be txt
+            data = map(
+                lambda line: LabelledEntry.load_from_bracket_format(line).sentence,
+                open(file_path).readlines()
+            )
+            # convert each sentence to l
             create_embeddings(data,config)
     
 def data_padding(data, word_to_ix, tag_to_ix, device, max_seq_len=20):

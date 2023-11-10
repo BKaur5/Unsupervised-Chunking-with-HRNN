@@ -33,9 +33,9 @@ class LabelledEntry:
             # bracketed_sent += ' '
         return LabelledEntry.load_from_bracket_format(bracketed_sent)
     
-    def get_sentence_no_notation(bracketed_sent):
-        # Take the bracketed sent and convert to a string of only words as a sentence without any notations.
-        pass
+    @property
+    def sentence(self):
+        return ' '.join(map(' '.join, self.chunks))
 
     def __str__(self):
         return '['+'] ['.join(list(map(' '.join, self.chunks)))+']'

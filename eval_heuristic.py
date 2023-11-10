@@ -5,20 +5,23 @@ from library.HRNN import eval_conll2000
 
 def eval_hu(test_data, test_tags_gt, single_words=False, **args):
     output = ""
-    for i, (pair, true_tag) in tqdm(enumerate(zip(test_data, test_tags_gt)), total=len(test_data)):
+    for i, (pred_tag, true_tag) in tqdm(enumerate(zip(test_data, test_tags_gt)), total=len(test_data)):
         if single_words:
-            ind = [1 for t in pair[1]]
+            ind = [1 for t in pred_tag]
         else:
-            ind = [t=='2' for t in pair[1]]
+            ind = [t=='2' for t in pred_tag]
+        #print(ind)
         vo = validation_output(ind, true_tag)
+        # print(ind, true_tag)
         output += vo
+    # print(output)
     fscore, acc = eval_conll2000(output, **args)
     return fscore, acc
 
 
 if __name__ == "__main__":
     # TEST_PATH = "experiments/second_order_hiddendim_anal_FA/test_predicted_0.pkl"
-    TEST_PATH = "HRNNdata_en/test.pkl"
+    TEST_PATH = "data/en_12_tags/test.pkl"
     TEST_TRUE_TAGS_PATH = "data/en_BI_tags/test.pkl"
 
     test_data = pickle.load(open(TEST_PATH, 'rb'))

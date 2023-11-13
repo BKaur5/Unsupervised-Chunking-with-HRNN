@@ -1,0 +1,6 @@
+embedding-flag: Bert
+sentences-files:
+ - "data/en_new_notation_ground_truths/test.txt"
+embedding_token_heuristic: "mean"
+bert_pretrained_weights: "bert-large-cased"
+embedding_dim: 1024

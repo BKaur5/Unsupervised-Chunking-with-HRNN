@@ -1,7 +1,8 @@
 import pickle
 from tqdm import tqdm
 from library.HRNN import validation_output
-from library.HRNN import eval_conll2000
+from library.eval_conll_python import conlleval
+
 
 def eval_hu(test_data, test_tags_gt, single_words=False, **args):
     output = ""
@@ -9,13 +10,11 @@ def eval_hu(test_data, test_tags_gt, single_words=False, **args):
         if single_words:
             ind = [1 for t in pred_tag]
         else:
-            ind = [t=='2' for t in pred_tag]
-        #print(ind)
+            ind = [t == '2' for t in pred_tag]
         vo = validation_output(ind, true_tag)
-        # print(ind, true_tag)
         output += vo
-    # print(output)
-    fscore, acc = eval_conll2000(output, **args)
+    
+    fscore, acc = conlleval(output)
     return fscore, acc
 
 

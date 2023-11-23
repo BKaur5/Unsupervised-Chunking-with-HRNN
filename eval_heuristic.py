@@ -17,6 +17,23 @@ def eval_hu(test_data, test_tags_gt, single_words=False, **args):
     fscore, acc = conlleval(output)
     return fscore, acc
 
+def get_tags(file_path):
+    all_sentence_tags = []
+    with(open(file_path, 'r')) as f:
+        sentences = f.readlines()
+        for sentence in sentences:
+            sentence_tags = []
+            split_in_chunks = sentence.split('] [')
+            for chunk in split_in_chunks:
+                sentence_tags.append('B')
+                split_in_words = chunk.split(' ')
+                if len(split_in_words) > 1:
+                    for i in range(len(split_in_words) - 1):
+                        sentence_tags.append('I')
+            all_sentence_tags.append(sentence_tags) 
+    return all_sentence_tags
+
+            
 
 if __name__ == "__main__":
     # TEST_PATH = "experiments/second_order_hiddendim_anal_FA/test_predicted_0.pkl"

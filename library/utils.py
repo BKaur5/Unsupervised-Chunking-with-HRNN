@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import shutil
+import csv
 
 def create_datetime_folder(path):
     date_time = str(datetime.now()).replace(' ','_')
@@ -17,3 +18,19 @@ def copy_files(filenames,destination):
 
 def get_torch_device(config):
     return config['device']
+
+
+def create_experiment_csv(config,csv_name,headers):
+    results_path = config["experiments"]
+    results_folder = create_datetime_folder(results_path)
+    csv_path = os.path.join(results_folder,csv_name)
+    with open(csv_path, mode='w', newline='') as file:
+    # Create a CSV writer object
+        writer = csv.writer(file)
+
+        # Write the headers to the CSV file
+        writer.writerow(headers)
+
+    return csv_path
+ 
+

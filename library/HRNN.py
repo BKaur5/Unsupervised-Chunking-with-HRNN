@@ -212,3 +212,13 @@ def validate(
             output += validation_output(ind, true_tag)
     return loss_sum / len(bucket_iterator), output
 
+# i think this needs to be updated?
+def eval_conll2000(
+    pairs: str,
+    eval_conll_path: str = 'library/eval_conll.pl',
+) -> tuple[float, float]: # F1, Acc
+    pipe = run(["perl", eval_conll_path], stdout=PIPE, input=pairs, encoding='ascii')
+    output = pipe.stdout.split('\n')[1]
+    tag_acc = float(output.split()[1].split('%')[0])
+    phrase_f1 = float(output.split()[-1])
+    return phrase_f1, tag_acc

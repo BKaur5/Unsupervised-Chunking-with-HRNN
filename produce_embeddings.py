@@ -9,7 +9,7 @@ import pickle
 import os
 
 
-EXPERIMENT_PATH = "embeddings"
+
 
 
 def main():
@@ -31,13 +31,13 @@ def main():
             open(file_name).readlines()
         ))
             
-          
+    EXPERIMENT_PATH = config["embeddings_path"]
     new_folder_path = create_datetime_folder(EXPERIMENT_PATH)
     # copying files
     files_to_copy = [config_path]
     copy_files(files_to_copy,new_folder_path)
-    sentences_words = [sentence.split() for sentence in sentences]
-    padded_sentences_words = data_padding(sentences_words)
+    
+    padded_sentences_words = data_padding(sentences)
     word_to_index_dict = word_to_index(padded_sentences_words)
     # word_list = []
     # for word,index in word_to_index_dict.items():
@@ -57,6 +57,7 @@ def main():
     # instead of a list of tensors, use a 2-d tensor and use torch.save. file extension:  .ebd.pt
  
 def data_padding(sentences):
+    sentences = [sentence.split() for sentence in sentences]
     data_lengths = [len(sentence) for sentence in sentences]
     max_data_len = max(data_lengths) + 2
     padded_data = []

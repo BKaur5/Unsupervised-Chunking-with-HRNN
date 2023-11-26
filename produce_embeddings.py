@@ -4,7 +4,7 @@ from tqdm import tqdm
 import yaml
 from library.labelled_entry import LabelledEntry
 from transformers import AutoModel, AutoTokenizer
-from library.utils import create_datetime_folder,copy_files
+from library.utils import create_datetime_folder,copy_files,get_torch_device
 import pickle
 import os
 
@@ -47,14 +47,14 @@ def main():
     #print(word_to_index('<PAD>')[0])
     index_to_words = {v: k for k, v in word_to_index_dict.items()}
     #print(index_to_words)
-    embeddings = induce_embeddings(indexes,index_to_words,config,'cpu') 
-    embd_file_path = os.path.join(new_folder_path,'bert_embeddings.ebd')
+    device = get_torch_device(config)
+    embeddings = induce_embeddings(indexes,index_to_words,config,device) 
+    embd_file_path = os.path.join(new_folder_path,'bert_embeddings.ebd.pt')
 
     # Write the list of tensors to the .pkl file
-    with open(embd_file_path, 'wb') as file:
-        pickle.dump(embeddings, file)
+    torch.save(embeddings,embd_file_path)
     
-
+    # instead of a list of tensors, use a 2-d tensor and use torch.save. file extension:  .ebd.pt
  
 def data_padding(sentences):
     data_lengths = [len(sentence) for sentence in sentences]
@@ -171,9 +171,6 @@ def select_indices(tokens, raw_tokens, model, mode):
 specials = {'bert': '#', 'gpt2': 'Ġ', 'xlnet': '▁', 'roberta': 'Ġ'}
 
 def group_indices(tokens, raw_tokens, model):
-    # print(tokens)
-    # print(raw_tokens)
-    # tokens, raw_tokens = persian_preprocess(tokens, raw_tokens)
 
     mask = []
     raw_i = 0
@@ -193,7 +190,6 @@ def group_indices(tokens, raw_tokens, model):
         collapsed_cnt += 1
         if token != '[UNK]':
             collapsed += token
-            # print(options, collapsed)
             if collapsed in options:
                 raw_tokens_cnt = options.index(collapsed)
                 for j in range(raw_tokens_cnt+1):
@@ -220,9 +216,6 @@ def group_indices(tokens, raw_tokens, model):
         print(options, collapsed)
         return 
     return torch.tensor(mask)
-
-
-    
 
 if __name__ == "__main__":
     main()

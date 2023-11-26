@@ -4,4 +4,3 @@ sentences-files:
 embedding_token_heuristic: "mean"
 bert_pretrained_weights: "bert-large-cased"
 embedding_dim: 1024
-device: gpu

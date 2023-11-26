@@ -14,3 +14,6 @@ def create_datetime_folder(path):
 def copy_files(filenames,destination):
     for filename in filenames:
         shutil.copy(filename,destination)
+
+def get_torch_device(config):
+    return config['device']

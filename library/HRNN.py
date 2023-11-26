@@ -1,14 +1,13 @@
 import torch
 from tqdm import tqdm
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torchtext.data import BucketIterator
 from library.logger import timing_logger
 import transformers
-import os
 from subprocess import run, PIPE
-# from transformers import *
+import numpy as np
+
 
 BATCH_SIZE = 1
 
@@ -193,66 +192,12 @@ def validation_output(
     return output
 
 
-
-
-def enforced_validation_output(
-    ind,
-    true_tag,
-    enforced_tags,
-) -> str:
-    output = ""
-    if enforced_tags[0] in ["B", "I"]:
-        output += f"x y B {enforced_tags[0]}\n"
-    else:
-        output += f"x y B B\n"
-    for i, pred in enumerate(ind[:-1]):
-        true_label = true_tag[i+1]
-        if true_label not in ["B", "I"]:
-            continue
-        if enforced_tags[i+1] in ["B", "I"]:
-            predicted_label = enforced_tags[i+1]
-        else:
-            predicted_label = "B" if pred else "I"
-        output += f"x y {true_label} {predicted_label}\n"
-    return output
-
-
-
-
-def enforced_Bstarting_validation_output(
-    ind,
-    true_tag,
-    enforced_tags,
-) -> str:
-    output = ""
-    if enforced_tags[0] in ["B", "I"]:
-        output += f"x y B {enforced_tags[0]}\n"
-    else:
-        output += f"x y B B\n"
-    for i, pred in enumerate(ind[:-1]):
-        true_label = true_tag[i+1]
-        if true_label not in ["B", "I"]:
-            continue
-        if enforced_tags[i+1] in ["B", "I"]:
-            predicted_label = enforced_tags[i+1]
-        elif enforced_tags[i] in ["B", "I"]:
-            predicted_label = "B"
-        else:
-            predicted_label = "B" if pred else "I"
-        output += f"x y {true_label} {predicted_label}\n"
-    return output
-
-
-
-
 @timing_logger
 def validate(
     model: HRNNtagger,
     data,
     true_tags,
     device,
-    enforced_mode: str = 'normal',
-    enforced_tags = None,
 ) -> tuple[float, str]:
     model.eval()
     hc = model.init_hidden().to(device)
@@ -264,13 +209,6 @@ def validate(
             tag_scores, loss = _forward(model, batch, hc, device)
             loss_sum += loss.item()
             ind = torch.argmax(tag_scores, dim=1)
-            if enforced_tags is None:
-                output += validation_output(ind, true_tag)
-            else:
-                enforced_tag = enforced_tags[i]
-                if enforced_mode == 'bstarting':
-                    output += enforced_Bstarting_validation_output(ind, true_tag, enforced_tag)
-                else:
-                    output += enforced_validation_output(ind, true_tag, enforced_tag)
+            output += validation_output(ind, true_tag)
     return loss_sum / len(bucket_iterator), output
 

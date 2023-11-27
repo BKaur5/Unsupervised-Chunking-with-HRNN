@@ -15,20 +15,8 @@ import csv
 def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
     loss = train(model, data, optimizer, scheduler, device=device)
     with open(train_csv_file, mode='a', newline='') as file:
-    # Create a CSV writer object
         writer = csv.writer(file)
-        # Write the headers to the CSV file
         writer.writerow(name, loss)
-
-    #data = 
-    # print( " __________________________________")
-    # print(f"| Train epoch {name}:")
-    # print(f"|     Loss:     {loss}")
-    # print( "|__________________________________")
-    # losses.append(loss)
-    # if config['train_loss']:
-    #     with open(config['home']+config['train_loss'], 'wb') as f:
-    #         pickle.dump(losses, f)
     return loss
 
 
@@ -46,20 +34,24 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
         enforced_mode=config['enforced_mode'].lower(),
     )
     fscore, acc = eval_conll2000(validation_output)
-    if config['validation_checkpoints_path']:
-        pred_path = config['home']+config['validation_checkpoints_path'] + 'validation-' + str(name) + '.out'
-        with open(pred_path, 'w') as f:
-            f.write(validation_output)
-    print( " __________________________________")
-    print(f"| Validation {name}:")
-    print(f"|     Loss:     {loss}")
-    print(f"|     F1:       {fscore}")
-    print(f"|     Accuracy: {acc}")
-    print( "|__________________________________")
+    # if config['validation_checkpoints_path']:
+    #     pred_path = config['home']+config['validation_checkpoints_path'] + 'validation-' + str(name) + '.out'
+    #     with open(pred_path, 'w') as f:
+    #         f.write(validation_output)
+    # print( " __________________________________")
+    # print(f"| Validation {name}:")
+    # print(f"|     Loss:     {loss}")
+    # print(f"|     F1:       {fscore}")
+    # print(f"|     Accuracy: {acc}")
+    # print( "|__________________________________")
     losses.append(loss)
     fscores.append(fscore)
     accs.append(acc)
-    
+    with open(validate_csv_file, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(name, loss,fscore,acc)
+
+    # do we need this plot stuff
     if config['validation_metrics']:
         plot_vars = {
             'loss': losses,
@@ -128,15 +120,9 @@ def main():
     train_file = create_experiment_csv(config,"train_results.csv",["Epoch","Loss"])
     validate_file = create_experiment_csv(config,"validate_results.csv",["Epoch","Loss","F1","Accuracy"])
     for epoch in range(config['epocs']):
-        # print(f"============================ Epoch {epoch} ============================")
-        # print('LR:', scheduler.get_last_lr())
-        _train(hrnn_model, training_data, optimizer, scheduler, epoch, device=device)
-        fscore = _validate(hrnn_model, validation_data, validation_true_tags, config, epoch, *validation_records, validate_file,device=device)
 
-        # if config['model_checkpoints_path'] and ( (epoch+1)%10 == 0 ):
-        #     torch.save(hrnn_model.state_dict(), config['home']+config['model_checkpoints_path']+'hrnn'+str(epoch)+'.pt')
-        # if config['optimizer_path']:
-        #     torch.save(optimizer.state_dict(), config['home']+config['optimizer_path'])
+        _train(hrnn_model, training_data, optimizer, scheduler, train_file,epoch, device=device)
+        fscore = _validate(hrnn_model, validation_data, validation_true_tags, config, epoch, *validation_records, validate_file,device=device)
 
         if fscore > best_fscore:
             best_fscore = fscore

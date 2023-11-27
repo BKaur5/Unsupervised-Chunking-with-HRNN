@@ -21,6 +21,7 @@ def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
 
 
 def _validate(model, data, true_tags, config, name, losses, fscores, accs,validate_csv_file,device):
+    # what is this enforced stuff
     if config['validation_mode'].lower() == 'enforced':
         enforced_tags = pickle.load(open(config['enforced_validation_tags'], "rb"))
     else:
@@ -58,6 +59,7 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
             'fscore': fscores,
             'acc': accs,
         }
+        # if yes, will need to change this path
         with open(config['home']+config['validation_metrics'], 'wb') as f:
             pickle.dump(plot_vars, f)
     return fscore

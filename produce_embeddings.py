@@ -31,7 +31,7 @@ def main():
             open(file_name).readlines()
         ))
             
-    EXPERIMENT_PATH = config["embeddings_path"]
+    EXPERIMENT_PATH = config["embeddings-path"]
     new_folder_path = create_datetime_folder(EXPERIMENT_PATH)
     # copying files
     files_to_copy = [config_path]
@@ -39,9 +39,7 @@ def main():
     
     padded_sentences_words = data_padding(sentences)
     word_to_index_dict = word_to_index(padded_sentences_words)
-    # word_list = []
-    # for word,index in word_to_index_dict.items():
-    #     word_list.append(index)
+
     word_list = [[word_to_index_dict[w] for w in sentence] for sentence in padded_sentences_words]
     indexes = torch.tensor(word_list,dtype=torch.long)
     #print(word_to_index('<PAD>')[0])
@@ -49,7 +47,8 @@ def main():
     #print(index_to_words)
     device = get_torch_device(config)
     embeddings = induce_embeddings(indexes,index_to_words,config,device) 
-    embd_file_path = os.path.join(new_folder_path,'bert_embeddings.ebd.pt')
+    output_file = config['embedding-output-name']+".ebd.pt"
+    embd_file_path = os.path.join(new_folder_path,output_file)
 
     # Write the list of tensors to the .pkl file
     torch.save(embeddings,embd_file_path)

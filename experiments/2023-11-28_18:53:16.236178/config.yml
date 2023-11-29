@@ -14,11 +14,10 @@ experiments-path: "experiments"
 
 embedding-flag: Bert
 embedding-path: "embeddings"
-embedding-output-name: "training_embeddings"
 embedding_token_heuristic: "mean"
 bert_pretrained_weights: "bert-large-cased"
 embedding_dim: 1024
-device: cpu
+device: gpu
 
 learning_rate: 2.0e-05
 epocs: 1

@@ -1,24 +1,14 @@
-def get_chunk_spans(sentence_tags):
-    spans = []
-    start = None
-
-    for i, tag in enumerate(sentence_tags):
-        if tag == 'B':
-            if start is not None:
-                # End the current span on a new 'B'
-                spans.append((start, i - 1))
-            start = i
-
-    # Handle the case where a span continues to the end of the sequence
-    if start is not None:
-        spans.append((start, len(sentence_tags) - 1))
-
-    return spans
+def get_chunk_spans(entry):
+    begins = [0]
+    for prev_chunk in entry.chunks[:-1]:
+        begins.append(begins[-1]+len(prev_chunk))
+    ends = [b for b in begins[1:]]
+    ends.append(sum([len(chunk) for chunk in entry.chunks]))
+    return list(zip(begins, ends))
 
 
 def get_f1_score(ground_truth_spans, predicted_spans):
     true_positive = 0
-    true_negative = 0
     false_positive = 0
     false_negative = 0
 

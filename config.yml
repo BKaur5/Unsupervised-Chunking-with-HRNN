@@ -1,19 +1,27 @@
 
-train_data: "HRNNdata_en/train.pkl"
-validation_data: "HRNNdata_en/val.pkl"
+home: ''
 
-embedding-flag: Bert
-embedding-path: "embeddings"
 sentences-files:
  - "data/en_new_notation_ground_truths/test.txt"
-embedding_token_heuristic: "mean"
-bert_pretrained_weights: "bert-large-cased"
-embedding_dim: 1024
-device: gpu
+
+train_data: "HRNNdata_en/train.pkl"
+validation_data: "HRNNdata_en/val.pkl"
+validation_true_tags: ''
+
 train_embeddings: embeddings/2023-11-21_13:01:45.899918/embeddings.ebd.pt
 validation_embeddings: embeddings/2023-11-21_13:01:45.899918/embeddings.ebd.pt
 experiments-path: "experiments"
 
+embedding-flag: Bert
+embedding-path: "embeddings"
+embedding_token_heuristic: "mean"
+bert_pretrained_weights: "bert-large-cased"
+embedding_dim: 1024
+device: gpu
+
 learning_rate: 2.0e-05
 epocs: 1
 warmup: 0
+pretrained_model: false
+
+best_model_path: ''

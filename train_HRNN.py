@@ -5,8 +5,9 @@ import sys
 import pickle
 import torch
 from library.utils import get_torch_device,create_experiment_csv
-from library.HRNN import HRNNtagger, get_training_equipments, train, validate, eval_conll2000
+from library.HRNN import HRNNtagger, get_training_equipments, train, validate
 from produce_embeddings import data_padding  #we are reading from the file right?
+from eval_heuristic import evaluate_heuristic
 import numpy as np
 import os
 import csv
@@ -22,11 +23,13 @@ def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
 
 def _validate(model, data, true_tags, config, name, losses, fscores, accs,validate_csv_file,device):
     # what is this enforced stuff
-    if config['validation_mode'].lower() == 'enforced':
-        enforced_tags = pickle.load(open(config['enforced_validation_tags'], "rb"))
-    else:
-        enforced_tags = None
-    loss, validation_output = validate(
+    # if config['validation_mode'].lower() == 'enforced':
+    #     enforced_tags = pickle.load(open(config['enforced_validation_tags'], "rb"))
+    # else:
+    #     enforced_tags = None
+
+    # TODO: CALCULATION OF LOSS?
+    loss, _ = validate(
         model,
         data,
         true_tags,
@@ -34,7 +37,7 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
         enforced_tags=enforced_tags,
         enforced_mode=config['enforced_mode'].lower(),
     )
-    fscore, acc = eval_conll2000(validation_output)
+    # fscore, acc = eval_conll2000(validation_output)
     # if config['validation_checkpoints_path']:
     #     pred_path = config['home']+config['validation_checkpoints_path'] + 'validation-' + str(name) + '.out'
     #     with open(pred_path, 'w') as f:
@@ -45,6 +48,9 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
     # print(f"|     F1:       {fscore}")
     # print(f"|     Accuracy: {acc}")
     # print( "|__________________________________")
+    
+    # TODO: HOW TO PASS ENTRIES TO EVAL HEURISTIC FUNCTION HERE? TAKE AS INPUTS FOR _VALIDATE???
+    fscore, acc = evaluate_heuristic(gt_entries, pred_entries)
     losses.append(loss)
     fscores.append(fscore)
     accs.append(acc)
@@ -52,7 +58,7 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
         writer = csv.writer(file)
         writer.writerow(name, loss,fscore,acc)
 
-    # do we need this plot stuff
+    # TODO: do we need this plot stuff
     if config['validation_metrics']:
         plot_vars = {
             'loss': losses,
@@ -89,7 +95,7 @@ def main():
     validation_embeddings = torch.load(config['validation_embeddings'], map_location=device)
     training_embeddings = torch.load(config['train_embeddings'], map_location=device)
 
-    # do we need these tags or do we just read them in?
+    # TODO: More clarity on how to read these tags?
     training_data = list(zip(training_embeddings, train_tags))
     validation_data = list(zip(validation_embeddings, validation_tags))
 
@@ -102,7 +108,7 @@ def main():
     ).to(device)
     optimizer, scheduler = get_training_equipments(hrnn_model, lr=config['learning_rate'], num_iter=config['epocs'], warmup=config['warmup'])
 
-    train_loss_vec = []
+    # train_loss_vec = []
     validation_records = [], [], []
     # validation_loss_vec, validation_fscore_vec, validation_acc_vec = validation_records
     best_fscore = 0.

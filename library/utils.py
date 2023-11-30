@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import shutil
 import csv
+from library.labelled_entry import LabelledEntry
 
 def create_datetime_folder(path):
     date_time = str(datetime.now()).replace(' ','_')
@@ -32,5 +33,13 @@ def create_experiment_csv(config,csv_name,headers):
         writer.writerow(headers)
 
     return csv_path
- 
+
+def read_entries(file_path):
+    entries = []
+    with(open(file_path, 'r')) as f:
+        sentences = f.readlines()
+        for sentence in sentences:
+            entry = LabelledEntry.load_from_bracket_format(sentence)
+            entries.append(entry)
+    return entries 
 

@@ -33,6 +33,31 @@ class LabelledEntry:
             # bracketed_sent += ' '
         return LabelledEntry.load_from_bracket_format(bracketed_sent)
     
+    def load_from_boolean_format(words, tags):
+        bracketed_sent = ''
+        for word, tag in zip(words, tags):
+            if tag:
+                bracketed_sent += '] ['
+            bracketed_sent += word+' '
+        bracketed_sent = bracketed_sent[2:]
+        return LabelledEntry.load_from_bracket_format(bracketed_sent)
+
+    def get_words(self):
+        # Get words from an entry
+        words = []
+        for chunk in self.chunks:
+            for word in chunk:
+                words.append(word)
+        return words
+
+    def get_chunk_spans(self):
+        begins = [0]
+        for prev_chunk in self.chunks[:-1]:
+            begins.append(begins[-1]+len(prev_chunk))
+        ends = [b for b in begins[1:]]
+        ends.append(sum([len(chunk) for chunk in self.chunks]))
+        return list(zip(begins, ends))
+    
     @property
     def sentence(self):
         return ' '.join(map(' '.join, self.chunks))

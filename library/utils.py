@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import shutil
 import csv
+import torch
 from library.labelled_entry import LabelledEntry
 
 def create_datetime_folder(path):
@@ -18,8 +19,12 @@ def copy_files(filenames,destination):
         shutil.copy(filename,destination)
 
 def get_torch_device(config):
-    return config['device']
-
+    device = config['device']
+    if device != 'cpu' and not torch.cuda.is_available():
+        raise Exception('THERE IS NO CUDA AVAILABLE!')
+    else:
+        device = torch.device(device)
+        return device
 
 def create_experiment_csv(config,csv_name,headers):
     results_path = config["experiments"]

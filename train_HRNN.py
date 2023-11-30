@@ -4,40 +4,37 @@ import yaml
 import sys
 import pickle
 import torch
-from library.utils import get_torch_device,create_experiment_csv
-from library.HRNN import HRNNtagger, get_training_equipments, train, validate
+from library.utils import get_torch_device,create_experiment_csv,read_entries
+from library.HRNN import HRNNtagger, get_training_equipments# change based on new HRNN file
 from produce_embeddings import data_padding  #we are reading from the file right?
-from eval_heuristic import evaluate_heuristic
 import numpy as np
 import os
 import csv
+from eval_heuristic import eval
+
 
 
 def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
-    loss = train(model, data, optimizer, scheduler, device=device)
+    loss = model.train(data, optimizer, scheduler, device=device)
     with open(train_csv_file, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(name, loss)
+    
     return loss
 
 
-def _validate(model, data, true_tags, config, name, losses, fscores, accs,validate_csv_file,device):
-    # what is this enforced stuff
-    # if config['validation_mode'].lower() == 'enforced':
-    #     enforced_tags = pickle.load(open(config['enforced_validation_tags'], "rb"))
-    # else:
-    #     enforced_tags = None
-
+def _validate(model, data, entries, name, losses, fscores, accs,validate_csv_file,device):
+    # Change variable names to indicate type and should be 
     # TODO: CALCULATION OF LOSS?
-    loss, _ = validate(
-        model,
+    loss, validation_entries = model.predict(
         data,
-        true_tags,
+        [entry.get_words() for entry in entries],
         device=device,
-        enforced_tags=enforced_tags,
-        enforced_mode=config['enforced_mode'].lower(),
     )
-    # fscore, acc = eval_conll2000(validation_output)
+
+    # send to baksheesh's evaluation function (output_entries vs entries)
+    fscore, acc = eval(entries,validation_entries)
+
     # if config['validation_checkpoints_path']:
     #     pred_path = config['home']+config['validation_checkpoints_path'] + 'validation-' + str(name) + '.out'
     #     with open(pred_path, 'w') as f:
@@ -48,9 +45,6 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
     # print(f"|     F1:       {fscore}")
     # print(f"|     Accuracy: {acc}")
     # print( "|__________________________________")
-    
-    # TODO: HOW TO PASS ENTRIES TO EVAL HEURISTIC FUNCTION HERE? TAKE AS INPUTS FOR _VALIDATE???
-    fscore, acc = evaluate_heuristic(gt_entries, pred_entries)
     losses.append(loss)
     fscores.append(fscore)
     accs.append(acc)
@@ -58,16 +52,7 @@ def _validate(model, data, true_tags, config, name, losses, fscores, accs,valida
         writer = csv.writer(file)
         writer.writerow(name, loss,fscore,acc)
 
-    # TODO: do we need this plot stuff
-    if config['validation_metrics']:
-        plot_vars = {
-            'loss': losses,
-            'fscore': fscores,
-            'acc': accs,
-        }
-        # if yes, will need to change this path
-        with open(config['home']+config['validation_metrics'], 'wb') as f:
-            pickle.dump(plot_vars, f)
+
     return fscore
     
 
@@ -76,28 +61,19 @@ def main():
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     device = get_torch_device(config)
-    if device != 'cpu' and not torch.cuda.is_available():
-        raise Exception('THERE IS NO CUDA AVAILABLE!')
-    else:
-        device = torch.device(device)
-  
+   
+    training_entries = read_entries(config['train_data'])
+    validation_entries = read_entries(config['validation_data'])
 
-
-    training_data = pickle.load(open(config['train_data'], "rb"))
-    validation_data = pickle.load(open(config['validation_data'], "rb"))
-    validation_true_tags = pickle.load(open(config['validation_true_tags'], "rb"))
-    # word_to_ix, ix_to_word, tag_to_ix, ix_to_tag = build_vocab(training_data + validation_data)
-    # train_tokens, train_tags, train_msl = data_padding(training_data, word_to_ix, tag_to_ix, device=device)
-    # validation_tokens, validation_tags, validation_msl = data_padding(validation_data, word_to_ix, tag_to_ix, device=device)
     
     # update path
     #if config['load_last_embeddings'] and os.path.exists(config['home']+config['validation_embeddings']):
     validation_embeddings = torch.load(config['validation_embeddings'], map_location=device)
     training_embeddings = torch.load(config['train_embeddings'], map_location=device)
 
-    # TODO: More clarity on how to read these tags?
-    training_data = list(zip(training_embeddings, train_tags))
-    validation_data = list(zip(validation_embeddings, validation_tags))
+
+    training_data = list(zip(training_embeddings, training_entries))
+    validation_data = list(zip(validation_embeddings, validation_entries))
 
 
     hrnn_model = HRNNtagger(
@@ -115,13 +91,14 @@ def main():
 
     if config['pretrained_model']:
         hrnn_model.load_state_dict(torch.load(config['home']+config['pretrained_model'], map_location=torch.device(device)))
+    
     _validate(
         hrnn_model,
         validation_data,
-        validation_true_tags,
-        config,
+        validation_entries,
         'pre-trained' if config['pretrained_model'] else 'init model',
         *validation_records,
+        validate_file,
         device=device
     )
 
@@ -130,7 +107,7 @@ def main():
     for epoch in range(config['epocs']):
 
         _train(hrnn_model, training_data, optimizer, scheduler, train_file,epoch, device=device)
-        fscore = _validate(hrnn_model, validation_data, validation_true_tags, config, epoch, *validation_records, validate_file,device=device)
+        fscore = _validate(hrnn_model, validation_data, validation_entries, epoch, *validation_records, validate_file,device=device)
 
         if fscore > best_fscore:
             best_fscore = fscore

@@ -7,9 +7,28 @@ from library.logger import timing_logger
 import transformers
 from subprocess import run, PIPE
 import numpy as np
+from library.labelled_entry import LabelledEntry
 
 
 BATCH_SIZE = 1
+
+def make_bucket_iterator(
+    data,
+    device: torch.device,
+):
+    bucket_iterator = BucketIterator(
+        data, 
+        batch_size=BATCH_SIZE,
+        sort_key=lambda x: np.count_nonzero(x[0]),
+        sort=False, 
+        shuffle=False,
+        sort_within_batch=False,
+        device=device,
+    )
+    bucket_iterator.create_batches()
+    return bucket_iterator
+
+
 
 class HRNNtagger(nn.ModuleList):
     
@@ -83,11 +102,74 @@ class HRNNtagger(nn.ModuleList):
 
         return output_seq, h2_actual
 
+    def proceed(
+        self,
+        batch: torch.Tensor,
+        hc: torch.Tensor,
+        device: torch.device,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        embedding = batch[0][0].to(device)
+        tag = batch[0][1].to(device)
+        seqlens = torch.as_tensor(torch.count_nonzero(tag, dim=-1), dtype=torch.int64, device='cpu')+2
+        tag = (tag - 1)[1:seqlens-1]
+
+        self.zero_grad()
+        tag_scores,_ = self(hc, embedding, seqlens)
+        tag_scores = torch.log(tag_scores[1:seqlens-1])
+
+        selection = (tag != 2)
+
+        loss = self.criterion(tag_scores[selection], tag[selection])
+        return tag_scores, loss
+
+    @timing_logger
+    def train(
+        self,
+        data,
+        optimizer,
+        scheduler,
+        device,
+    ) -> float:
+        self.train()
+        loss_sum = 0.
+        bucket_iterator = make_bucket_iterator(data, device=device)
+        for batch in tqdm(bucket_iterator.batches, total=len(bucket_iterator)):
+            hc = self.init_hidden().to(device)
+            _, loss = self.proceed(batch, hc, device)
+            loss.backward()
+            optimizer.step()
+            loss_sum += loss.item()
+        scheduler.step()
+        return loss_sum / len(bucket_iterator)
+
+    @timing_logger
+    def predict(
+        self,
+        data,
+        sentences_words,
+        device,
+    ) -> tuple[float, str]:
+        self.eval()
+        hc = self.init_hidden().to(device)
+        loss_sum = 0.
+        bucket_iterator = make_bucket_iterator(data, device=device)
+        # output = ""
+        output_entries = []
+        with torch.no_grad():
+            for i, (batch, sentence_words) in tqdm(enumerate(zip(bucket_iterator.batches, sentences_words)), total=len(bucket_iterator)):
+                tag_scores, loss = self.proceed(batch, hc, device)
+                loss_sum += loss.item()
+                ind = torch.argmax(tag_scores, dim=1)
+                # output += validation_output(ind, true_tag) # call load_from_boolean_format
+                #####
+                output_entries.append(LabelledEntry.load_from_boolean_format(sentence_words), ind)
+                #####
+        return loss_sum / len(bucket_iterator), output_entries
+
+
 
     def init_hidden(self):
         return (torch.zeros(BATCH_SIZE, self.hidden_dim))
-
-
 
 
 def get_training_equipments(
@@ -110,115 +192,46 @@ def get_training_equipments(
 
 
 
-def make_bucket_iterator(
-    data,
-    device: torch.device,
-):
-    bucket_iterator = BucketIterator(
-        data, 
-        batch_size=BATCH_SIZE,
-        sort_key=lambda x: np.count_nonzero(x[0]),
-        sort=False, 
-        shuffle=False,
-        sort_within_batch=False,
-        device=device,
-    )
-    bucket_iterator.create_batches()
-    return bucket_iterator
+# add it to HRNN: _proceed -> proceed
+ # predicted probs, true tags, loss
+
+
+
+# add to HRNN: model -> self, _proceed -> self.proceed
 
 
 
 
-def _forward(
-    model: HRNNtagger,
-    batch: torch.Tensor,
-    hc: torch.Tensor,
-    device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    embedding = batch[0][0].to(device)
-    tag = batch[0][1].to(device)
-    seqlens = torch.as_tensor(torch.count_nonzero(tag, dim=-1), dtype=torch.int64, device='cpu')+2
-    tag = (tag - 1)[1:seqlens-1]
+# remove
+# chnage this to return an entry
+# def validation_output(
+#     ind,
+#     true_tag,
+# ) -> str:
+#     output = "x y B B\n"
+#     for i, pred in enumerate(ind[:-1]):
+#         if i + 1 >= len(true_tag):
+#             break  # Exit the loop if accessing true_tag[i+1] is out of bounds
+#         true_label = true_tag[i+1]
+#         if true_label not in ["B", "I"]:
+#             continue
+#         predicted_label = "B" if pred else "I"
 
-    model.zero_grad()
-    tag_scores,_ = model(hc, embedding, seqlens)
-    tag_scores = torch.log(tag_scores[1:seqlens-1])
-
-    selection = (tag != 2)
-
-    loss = model.criterion(tag_scores[selection], tag[selection])
-    return tag_scores, loss # predicted probs, true tags, loss
+#         output += f"x y {true_label} {predicted_label}\n"
+#     return output
 
 
+# add to HRNN, model -> self, validate (function's name) -> predict, _proceed -> self.proceed
 
 
-@timing_logger
-def train(
-    model: HRNNtagger,
-    data,
-    optimizer,
-    scheduler,
-    device,
-) -> float:
-    model.train()
-    loss_sum = 0.
-    bucket_iterator = make_bucket_iterator(data, device=device)
-    for batch in tqdm(bucket_iterator.batches, total=len(bucket_iterator)):
-        hc = model.init_hidden().to(device)
-        _, loss = _forward(model, batch, hc, device)
-        loss.backward()
-        optimizer.step()
-        loss_sum += loss.item()
-    scheduler.step()
-    return loss_sum / len(bucket_iterator)
-
-
-
-
-def validation_output(
-    ind,
-    true_tag,
-) -> str:
-    output = "x y B B\n"
-    for i, pred in enumerate(ind[:-1]):
-        if i + 1 >= len(true_tag):
-            break  # Exit the loop if accessing true_tag[i+1] is out of bounds
-        true_label = true_tag[i+1]
-        if true_label not in ["B", "I"]:
-            continue
-        predicted_label = "B" if pred else "I"
-
-        output += f"x y {true_label} {predicted_label}\n"
-    return output
-
-
-@timing_logger
-def validate(
-    model: HRNNtagger,
-    data,
-    true_tags,
-    device,
-) -> tuple[float, str]:
-    model.eval()
-    hc = model.init_hidden().to(device)
-    loss_sum = 0.
-    bucket_iterator = make_bucket_iterator(data, device=device)
-    output = ""
-    with torch.no_grad():
-        for i, (batch, true_tag) in tqdm(enumerate(zip(bucket_iterator.batches, true_tags)), total=len(bucket_iterator)):
-            tag_scores, loss = _forward(model, batch, hc, device)
-            loss_sum += loss.item()
-            ind = torch.argmax(tag_scores, dim=1)
-            output += validation_output(ind, true_tag)
-    return loss_sum / len(bucket_iterator), output
-
+# remove
 # i think this needs to be updated?
-def eval_conll2000(
-    pairs: str,
-    eval_conll_path: str = 'library/eval_conll.pl',
-) -> tuple[float, float]: # F1, Acc
-    pipe = run(["perl", eval_conll_path], stdout=PIPE, input=pairs, encoding='ascii')
-    output = pipe.stdout.split('\n')[1]
-    tag_acc = float(output.split()[1].split('%')[0])
-    phrase_f1 = float(output.split()[-1])
-    return phrase_f1, tag_acc
+# def eval_conll2000(
+#     pairs: str,
+#     eval_conll_path: str = 'library/eval_conll.pl',
+# ) -> tuple[float, float]: # F1, Acc
+#     pipe = run(["perl", eval_conll_path], stdout=PIPE, input=pairs, encoding='ascii')
+#     output = pipe.stdout.split('\n')[1]
+#     tag_acc = float(output.split()[1].split('%')[0])
+#     phrase_f1 = float(output.split()[-1])
+#     return phrase_f1, tag_acc

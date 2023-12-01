@@ -49,7 +49,16 @@ class LabelledEntry:
             for word in chunk:
                 words.append(word)
         return words
-
+        
+    def get_boolean_tags(self):
+        tags = []
+        for chunk in self.chunks:
+            tags.append(1)
+            if len(chunk) > 1:
+                i = [0] * (len(chunk)-1)
+                tags.extend(i)
+        return tags
+        
     def get_chunk_spans(self):
         begins = [0]
         for prev_chunk in self.chunks[:-1]:

@@ -26,6 +26,7 @@ def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
 def _validate(model, data, entries, name, losses, fscores, accs,validate_csv_file,device):
     # Change variable names to indicate type and should be 
     # TODO: CALCULATION OF LOSS?
+    
     loss, validation_entries = model.predict(
         data,
         [entry.get_words() for entry in entries],
@@ -34,17 +35,6 @@ def _validate(model, data, entries, name, losses, fscores, accs,validate_csv_fil
 
     # send to baksheesh's evaluation function (output_entries vs entries)
     fscore, acc = eval(entries,validation_entries)
-
-    # if config['validation_checkpoints_path']:
-    #     pred_path = config['home']+config['validation_checkpoints_path'] + 'validation-' + str(name) + '.out'
-    #     with open(pred_path, 'w') as f:
-    #         f.write(validation_output)
-    # print( " __________________________________")
-    # print(f"| Validation {name}:")
-    # print(f"|     Loss:     {loss}")
-    # print(f"|     F1:       {fscore}")
-    # print(f"|     Accuracy: {acc}")
-    # print( "|__________________________________")
     losses.append(loss)
     fscores.append(fscore)
     accs.append(acc)

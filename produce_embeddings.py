@@ -8,10 +8,6 @@ from library.utils import create_datetime_folder,copy_files,get_torch_device
 import pickle
 import os
 
-
-
-
-
 def main():
     # first argument is path to config file
     config_path = sys.argv[1]

@@ -27,7 +27,7 @@ def get_torch_device(config):
         return device
 
 def create_experiment_csv(config,csv_name,headers):
-    results_path = config["experiments"]
+    results_path = config["experiments-path"]
     results_folder = create_datetime_folder(results_path)
     csv_path = os.path.join(results_folder,csv_name)
     with open(csv_path, mode='w', newline='') as file:

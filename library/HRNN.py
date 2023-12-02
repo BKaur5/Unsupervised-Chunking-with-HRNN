@@ -122,7 +122,7 @@ class HRNNtagger(nn.ModuleList):
         loss = self.criterion(tag_scores[selection], tag[selection])
         return tag_scores, loss
 
-    @timing_logger
+
     def train(
         self,
         data,
@@ -142,14 +142,13 @@ class HRNNtagger(nn.ModuleList):
         scheduler.step()
         return loss_sum / len(bucket_iterator)
 
-    @timing_logger
     def predict(
         self,
         data,
         sentences_words,
         device,
     ) -> tuple[float, str]:
-        self.eval()
+        #self.eval()
         hc = self.init_hidden().to(device)
         loss_sum = 0.
         bucket_iterator = make_bucket_iterator(data, device=device)

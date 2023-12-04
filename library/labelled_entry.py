@@ -3,7 +3,7 @@ class LabelledEntry:
         self.chunks = chunks
     
     def load_from_bracket_format(bracketed_sent):
-        chunks = list(map(str.split, bracketed_sent[1:-1].split('] [')))
+        chunks = list(map(str.split, bracketed_sent.strip()[1:-1].split('] [')))
         return LabelledEntry(chunks)
 
     def load_from_IB_format(words, tags):

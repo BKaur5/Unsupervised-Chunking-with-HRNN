@@ -2,27 +2,28 @@
 home: ''
 
 sentences-files:
- - "data/en_new_notation_ground_truths/train.txt"
+ - "data/en_new_notation_ground_truths/val.txt"
 
-train_data: "HRNNdata_en/train.pkl"
-validation_data: "HRNNdata_en/val.pkl"
+train_data: "data/en_new_notation_ground_truths/train.txt"
+validation_data: "data/en_new_notation_ground_truths/val.txt"
 validation_true_tags: ''
 
-train_embeddings: embeddings/2023-11-21_13:01:45.899918/embeddings.ebd.pt
-validation_embeddings: embeddings/2023-11-21_13:01:45.899918/embeddings.ebd.pt
+train_embeddings: embeddings/2023-11-29_20:32:36.578753/train_embeddings.ebd.pt
+validation_embeddings: embeddings/2023-11-29_20:32:36.578753/validation_embeddings.ebd.pt
 experiments-path: "experiments"
 
 embedding-flag: Bert
-embedding-path: "embeddings"
-embedding-output-name: "training_embeddings"
+embeddings-path: "embeddings"
+embedding-output-name: "validation_embeddings"
 embedding_token_heuristic: "mean"
 bert_pretrained_weights: "bert-large-cased"
+hidden_dim: 100
 embedding_dim: 1024
 device: cpu
 
 learning_rate: 2.0e-05
 epocs: 1
 warmup: 0
-pretrained_model: false
+pretrained_model: ''
 
 best_model_path: ''

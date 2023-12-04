@@ -26,6 +26,7 @@ def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
 def _validate(model, data, entries, name, losses, fscores, accs,validate_csv_file,device):
     # Change variable names to indicate type and should be 
     # TODO: CALCULATION OF LOSS?
+    
     loss, validation_entries = model.predict(
         data,
         [entry.get_words() for entry in entries],
@@ -34,17 +35,6 @@ def _validate(model, data, entries, name, losses, fscores, accs,validate_csv_fil
 
     # send to baksheesh's evaluation function (output_entries vs entries)
     fscore, acc = eval(entries,validation_entries)
-
-    # if config['validation_checkpoints_path']:
-    #     pred_path = config['home']+config['validation_checkpoints_path'] + 'validation-' + str(name) + '.out'
-    #     with open(pred_path, 'w') as f:
-    #         f.write(validation_output)
-    # print( " __________________________________")
-    # print(f"| Validation {name}:")
-    # print(f"|     Loss:     {loss}")
-    # print(f"|     F1:       {fscore}")
-    # print(f"|     Accuracy: {acc}")
-    # print( "|__________________________________")
     losses.append(loss)
     fscores.append(fscore)
     accs.append(acc)
@@ -65,16 +55,13 @@ def main():
     training_entries = read_entries(config['train_data'])
     validation_entries = read_entries(config['validation_data'])
 
-    
     # update path
-    #if config['load_last_embeddings'] and os.path.exists(config['home']+config['validation_embeddings']):
+    # if config['load_last_embeddings'] and os.path.exists(config['home']+config['validation_embeddings']):
     validation_embeddings = torch.load(config['validation_embeddings'], map_location=device)
     training_embeddings = torch.load(config['train_embeddings'], map_location=device)
 
-
     training_data = list(zip(training_embeddings, training_entries))
     validation_data = list(zip(validation_embeddings, validation_entries))
-
 
     hrnn_model = HRNNtagger(
         embedding_dim=config['embedding_dim'],
@@ -92,6 +79,9 @@ def main():
     if config['pretrained_model']:
         hrnn_model.load_state_dict(torch.load(config['home']+config['pretrained_model'], map_location=torch.device(device)))
     
+    train_file = create_experiment_csv(config,"train_results.csv",["Epoch","Loss"])
+    validate_file = create_experiment_csv(config,"validate_results.csv",["Epoch","Loss","F1","Accuracy"])
+
     _validate(
         hrnn_model,
         validation_data,
@@ -102,8 +92,7 @@ def main():
         device=device
     )
 
-    train_file = create_experiment_csv(config,"train_results.csv",["Epoch","Loss"])
-    validate_file = create_experiment_csv(config,"validate_results.csv",["Epoch","Loss","F1","Accuracy"])
+    
     for epoch in range(config['epocs']):
 
         _train(hrnn_model, training_data, optimizer, scheduler, train_file,epoch, device=device)

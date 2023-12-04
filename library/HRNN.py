@@ -109,20 +109,22 @@ class HRNNtagger(nn.ModuleList):
         device: torch.device,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         embedding = batch[0][0].to(device)
-        tag = batch[0][1].to(device)
+        tag = torch.as_tensor(batch[0][1].get_boolean_tags(), dtype=torch.bool, device=device)
         seqlens = torch.as_tensor(torch.count_nonzero(tag, dim=-1), dtype=torch.int64, device='cpu')+2
-        tag = (tag - 1)[1:seqlens-1]
-
+        # WHAT DOES THIS DO?
+        # was previously (tag-1)1:seqlens - 1]
+        tag = ~tag[1:seqlens - 1]
+        # again does this work? does doing self work the same way as when we were doing it for model before?
         self.zero_grad()
         tag_scores,_ = self(hc, embedding, seqlens)
         tag_scores = torch.log(tag_scores[1:seqlens-1])
-
+        # how do i change this for boolean
         selection = (tag != 2)
-
-        loss = self.criterion(tag_scores[selection], tag[selection])
+        tag_long = tag[selection].to(torch.long)
+        loss = self.criterion(tag_scores[selection], tag_long)
         return tag_scores, loss
 
-    @timing_logger
+
     def train(
         self,
         data,
@@ -142,28 +144,24 @@ class HRNNtagger(nn.ModuleList):
         scheduler.step()
         return loss_sum / len(bucket_iterator)
 
-    @timing_logger
     def predict(
         self,
         data,
         sentences_words,
         device,
     ) -> tuple[float, str]:
-        self.eval()
+        # does not work gives an error, do we need it? 
+        # self.eval()
         hc = self.init_hidden().to(device)
         loss_sum = 0.
         bucket_iterator = make_bucket_iterator(data, device=device)
-        # output = ""
         output_entries = []
         with torch.no_grad():
             for i, (batch, sentence_words) in tqdm(enumerate(zip(bucket_iterator.batches, sentences_words)), total=len(bucket_iterator)):
                 tag_scores, loss = self.proceed(batch, hc, device)
                 loss_sum += loss.item()
                 ind = torch.argmax(tag_scores, dim=1)
-                # output += validation_output(ind, true_tag) # call load_from_boolean_format
-                #####
-                output_entries.append(LabelledEntry.load_from_boolean_format(sentence_words), ind)
-                #####
+                output_entries.append(LabelledEntry.load_from_boolean_format(sentence_words, ind))
         return loss_sum / len(bucket_iterator), output_entries
 
 

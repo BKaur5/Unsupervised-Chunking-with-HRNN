@@ -4,7 +4,7 @@ import yaml
 import sys
 import pickle
 import torch
-from library.utils import get_torch_device,create_experiment_csv,read_entries
+from library.utils import get_torch_device,create_experiment_csv,read_entries,create_datetime_folder
 from library.HRNN import HRNNtagger, get_training_equipments# change based on new HRNN file
 from produce_embeddings import data_padding  #we are reading from the file right?
 import numpy as np
@@ -15,10 +15,10 @@ from eval_heuristic import eval
 
 
 def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
-    loss = model.train(data, optimizer, scheduler, device=device)
+    loss = model.train_from(data, optimizer, scheduler, device=device)
     with open(train_csv_file, mode='a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(name, loss)
+        writer.writerow([name, loss])
     
     return loss
 
@@ -40,7 +40,7 @@ def _validate(model, data, entries, name, losses, fscores, accs,validate_csv_fil
     accs.append(acc)
     with open(validate_csv_file, mode='a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(name, loss,fscore,acc)
+        writer.writerow([name,loss,fscore,acc])
 
 
     return fscore
@@ -79,8 +79,10 @@ def main():
     if config['pretrained_model']:
         hrnn_model.load_state_dict(torch.load(config['home']+config['pretrained_model'], map_location=torch.device(device)))
     
-    train_file = create_experiment_csv(config,"train_results.csv",["Epoch","Loss"])
-    validate_file = create_experiment_csv(config,"validate_results.csv",["Epoch","Loss","F1","Accuracy"])
+    results_path = config["experiments-path"]
+    results_folder = create_datetime_folder(results_path)
+    train_file = create_experiment_csv(results_folder,config,"train_results.csv",["Epoch","Loss"])
+    validate_file = create_experiment_csv(results_folder,config,"validate_results.csv",["Epoch","Loss","F1","Accuracy"])
 
     _validate(
         hrnn_model,
@@ -100,7 +102,8 @@ def main():
 
         if fscore > best_fscore:
             best_fscore = fscore
-            torch.save(hrnn_model.state_dict(), config['home']+config['best_model_path'])
+            #
+            #torch.save(hrnn_model.state_dict(), config['home']+config['best_model_path'])
 
 
 if __name__ == "__main__":

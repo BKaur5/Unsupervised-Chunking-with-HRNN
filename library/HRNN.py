@@ -110,22 +110,15 @@ class HRNNtagger(nn.ModuleList):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         embedding = batch[0][0].to(device)
         tag = torch.as_tensor(batch[0][1].get_boolean_tags(), dtype=torch.bool, device=device)
-        seqlens = torch.as_tensor(torch.count_nonzero(tag, dim=-1), dtype=torch.int64, device='cpu')+2
-        # WHAT DOES THIS DO?
-        # was previously (tag-1)1:seqlens - 1]
-        tag = ~tag[1:seqlens - 1]
-        # again does this work? does doing self work the same way as when we were doing it for model before?
+        tag = ~tag
         self.zero_grad()
-        tag_scores,_ = self(hc, embedding, seqlens)
-        tag_scores = torch.log(tag_scores[1:seqlens-1])
-        # how do i change this for boolean
-        selection = (tag != 2)
-        tag_long = tag[selection].to(torch.long)
-        loss = self.criterion(tag_scores[selection], tag_long)
+        tag_scores,_ = self(hc, embedding, tag.shape[0]+2) # +2 is for SOS and EOS
+        tag_scores = torch.log(tag_scores[1:tag.shape[0]+1]) # [1:tag.shape[0]+1] is for dropping SOS and EOS
+        loss = self.criterion(tag_scores, tag.to(torch.long))
         return tag_scores, loss
 
 
-    def train(
+    def train_from(
         self,
         data,
         optimizer,
@@ -151,7 +144,7 @@ class HRNNtagger(nn.ModuleList):
         device,
     ) -> tuple[float, str]:
         # does not work gives an error, do we need it? 
-        # self.eval()
+        self.eval()
         hc = self.init_hidden().to(device)
         loss_sum = 0.
         bucket_iterator = make_bucket_iterator(data, device=device)

@@ -1,5 +1,5 @@
 
-home: ''
+home: '/'
 
 sentences-files:
  - "data/en_new_notation_ground_truths/val.txt"

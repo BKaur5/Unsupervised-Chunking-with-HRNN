@@ -23,7 +23,7 @@ def main():
         # Open and read the content of the file
         with open(file_name, 'r') as current_file:
             sentences = list(map(
-            lambda line: LabelledEntry.load_from_bracket_format(line).sentence.rstrip(']'),
+            lambda line: LabelledEntry.load_from_bracket_format(line).sentence,
             open(file_name).readlines()
         ))
             

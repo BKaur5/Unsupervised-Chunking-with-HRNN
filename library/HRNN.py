@@ -110,7 +110,6 @@ class HRNNtagger(nn.ModuleList):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         embedding = batch[0][0].to(device)
         tag = torch.as_tensor(batch[0][1].get_boolean_tags(), dtype=torch.bool, device=device)
-        tag = ~tag
         self.zero_grad()
         tag_scores,_ = self(hc, embedding, tag.shape[0]+2) # +2 is for SOS and EOS
         tag_scores = torch.log(tag_scores[1:tag.shape[0]+1]) # [1:tag.shape[0]+1] is for dropping SOS and EOS
@@ -154,6 +153,7 @@ class HRNNtagger(nn.ModuleList):
                 tag_scores, loss = self.proceed(batch, hc, device)
                 loss_sum += loss.item()
                 ind = torch.argmax(tag_scores, dim=1)
+                ind = [1]+ind[:-1].tolist()
                 output_entries.append(LabelledEntry.load_from_boolean_format(sentence_words, ind))
         return loss_sum / len(bucket_iterator), output_entries
 

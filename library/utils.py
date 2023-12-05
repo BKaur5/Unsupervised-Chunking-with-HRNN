@@ -4,6 +4,7 @@ import shutil
 import csv
 import torch
 from library.labelled_entry import LabelledEntry
+from eval_heuristic import eval
 
 def create_datetime_folder(path):
     date_time = str(datetime.now()).replace(' ','_')
@@ -26,9 +27,7 @@ def get_torch_device(config):
         device = torch.device(device)
         return device
 
-def create_experiment_csv(config,csv_name,headers):
-    results_path = config["experiments-path"]
-    results_folder = create_datetime_folder(results_path)
+def create_experiment_csv(results_folder,config,csv_name,headers):
     csv_path = os.path.join(results_folder,csv_name)
     with open(csv_path, mode='w', newline='') as file:
     # Create a CSV writer object
@@ -48,3 +47,17 @@ def read_entries(file_path):
             entries.append(entry)
     return entries 
 
+def validate(model, data, entries, name,validate_csv_file,device):
+
+    loss, validation_entries = model.predict(
+        data,
+        [entry.get_words() for entry in entries],
+        device=device,
+    )
+
+    fscore, acc = eval(entries,validation_entries)
+    with open(validate_csv_file, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([name,loss,fscore,acc])
+
+    return loss, fscore, acc

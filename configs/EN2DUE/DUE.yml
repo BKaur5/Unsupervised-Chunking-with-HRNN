@@ -1,0 +1,5 @@
+bert_pretrained_weights: "DUE-bert-something" or ("multilingual" **)
+train_data: DUE
+validation_data: DUE
+test_data: DUE
+pretrained_model: path to the best checkpoint in the EN.yaml/experiment/folder

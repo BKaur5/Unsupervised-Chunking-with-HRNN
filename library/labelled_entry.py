@@ -57,7 +57,7 @@ class LabelledEntry:
             if len(chunk) > 1:
                 i = [0] * (len(chunk)-1)
                 tags.extend(i)
-        return tags
+        return tags[1:]+[1]
         
     def get_chunk_spans(self):
         begins = [0]

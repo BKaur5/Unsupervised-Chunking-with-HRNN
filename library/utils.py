@@ -4,7 +4,6 @@ import shutil
 import csv
 import torch
 from library.labelled_entry import LabelledEntry
-from eval_heuristic import eval
 
 def create_datetime_folder(path):
     date_time = str(datetime.now()).replace(' ','_')
@@ -15,9 +14,14 @@ def create_datetime_folder(path):
     os.mkdir(new_folder_path)
     return new_folder_path
 
-def copy_files(filenames,destination):
+def copy_files(filenames,destination,rename=False):
     for filename in filenames:
         shutil.copy(filename,destination)
+        if rename:
+            base_name = os.path.basename(filename)
+            new_name = "config.yml"
+            new_file_path = os.path.join(destination, new_name)
+            os.rename(os.path.join(destination, base_name), new_file_path)
 
 def get_torch_device(config):
     device = config['device']
@@ -47,17 +51,3 @@ def read_entries(file_path):
             entries.append(entry)
     return entries 
 
-def validate(model, data, entries, name,validate_csv_file,device):
-
-    loss, validation_entries = model.predict(
-        data,
-        [entry.get_words() for entry in entries],
-        device=device,
-    )
-
-    fscore, acc = eval(entries,validation_entries)
-    with open(validate_csv_file, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([name,loss,fscore,acc])
-
-    return loss, fscore, acc

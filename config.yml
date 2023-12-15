@@ -3,13 +3,16 @@ home: 'experiments'
 
 sentences-files:
  - "data/en_new_notation_ground_truths/val.txt"
+ - "data/en_new_notation_ground_truths/test.txt"
 
 train_data: "data/en_new_notation_pseudo_labels/train.txt"
 validation_data: "data/en_new_notation_ground_truths/val.txt"
+test_data: "data/en_new_notation_pseudo_labels/test.txt"
 validation_true_tags: ''
 
 train_embeddings: embeddings/2023-11-29_20:32:36.578753/train_embeddings.ebd.pt
 validation_embeddings: embeddings/2023-11-29_20:32:36.578753/validation_embeddings.ebd.pt
+test_embeddings: embeddings/2023-12-05_02:25:51.155152/test_embeddings.ebd.pt
 experiments-path: "experiments"
 
 embedding-flag: Bert
@@ -22,8 +25,8 @@ embedding_dim: 1024
 device: cpu
 
 learning_rate: 2.0e-05
-epocs: 4
+epocs: 1
 warmup: 0
 pretrained_model: ''
 
-best_model_path: ''
+best_model_path: "experiments/2023-12-05_02:40:17.282293/best_model.pt"

@@ -16,6 +16,11 @@ def main():
     # second argument is path to folder containing input files
     # read this from config, it is a list of files and not a folder
     sentences_files = config['sentences-files']
+    EXPERIMENT_PATH = config["embeddings-path"]
+    new_folder_path = create_datetime_folder(EXPERIMENT_PATH)
+    # copying files
+    files_to_copy = [config_path]
+    copy_files(files_to_copy,new_folder_path)
 
     for file in sentences_files:
         # Strip any leading or trailing whitespaces
@@ -27,27 +32,24 @@ def main():
             open(file_name).readlines()
         ))
             
-    EXPERIMENT_PATH = config["embeddings-path"]
-    new_folder_path = create_datetime_folder(EXPERIMENT_PATH)
-    # copying files
-    files_to_copy = [config_path]
-    copy_files(files_to_copy,new_folder_path)
-    
-    padded_sentences_words = data_padding(sentences)
-    word_to_index_dict = word_to_index(padded_sentences_words)
+        padded_sentences_words = data_padding(sentences)
+        word_to_index_dict = word_to_index(padded_sentences_words)
 
-    word_list = [[word_to_index_dict[w] for w in sentence] for sentence in padded_sentences_words]
-    indexes = torch.tensor(word_list,dtype=torch.long)
-    #print(word_to_index('<PAD>')[0])
-    index_to_words = {v: k for k, v in word_to_index_dict.items()}
-    #print(index_to_words)
-    device = get_torch_device(config)
-    embeddings = induce_embeddings(indexes,index_to_words,config,device) 
-    output_file = config['embedding-output-name']+".ebd.pt"
-    embd_file_path = os.path.join(new_folder_path,output_file)
+        word_list = [[word_to_index_dict[w] for w in sentence] for sentence in padded_sentences_words]
+        indexes = torch.tensor(word_list,dtype=torch.long)
+        #print(word_to_index('<PAD>')[0])
+        index_to_words = {v: k for k, v in word_to_index_dict.items()}
+        #print(index_to_words)
+        device = get_torch_device(config)
+        embeddings = induce_embeddings(indexes,index_to_words,config,device) 
 
-    # Write the list of tensors to the .pkl file
-    torch.save(embeddings,embd_file_path)
+        basename = os.path.basename(file_name)
+        filename_without_extension, _ = os.path.splitext(basename)
+        output_file = filename_without_extension+".ebd.pt"
+        embd_file_path = os.path.join(new_folder_path,output_file)
+
+        # Write the list of tensors to the .pkl file
+        torch.save(embeddings,embd_file_path)
     
     # instead of a list of tensors, use a 2-d tensor and use torch.save. file extension:  .ebd.pt
  

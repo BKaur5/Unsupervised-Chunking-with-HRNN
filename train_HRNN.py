@@ -3,7 +3,8 @@
 import yaml
 import sys
 import torch
-from library.utils import get_torch_device,create_experiment_csv,read_entries,create_datetime_folder,validate
+from library.utils import get_torch_device,create_experiment_csv,read_entries,create_datetime_folder,copy_files
+from library.validate_util import validate
 from library.HRNN import HRNNtagger, get_training_equipments# change based on new HRNN file
 import csv
 
@@ -15,7 +16,8 @@ def _train(model, data, optimizer, scheduler, train_csv_file, name, device):
     return loss
     
 def main():
-    with open(sys.argv[1]) as f:
+    config_path = sys.argv[1]
+    with open(config_path) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     device = get_torch_device(config)
@@ -65,7 +67,9 @@ def main():
 
         if fscore > best_fscore:
             best_fscore = fscore
-            torch.save(hrnn_model.state_dict(), results_folder)
+            torch.save(hrnn_model.state_dict(), results_folder+"/best_model.pt")
 
+    files_to_copy = [config_path]
+    copy_files(files_to_copy,results_folder,rename=True)
 if __name__ == "__main__":
 	main()
